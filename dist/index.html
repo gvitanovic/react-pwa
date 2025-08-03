@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#3367d6" />
+    <meta name="description" content="A Progressive Web App for browsing Pokemon with infinite scroll" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Pokemon PWA</title>
+    <script type="module" crossorigin src="/assets/index-DfsUwh7Q.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DRLYP0vC.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Check if we're in a secure context (HTTPS or localhost)
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+          .register('/pokemonWorker.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          }).catch(error => {
+            console.error('Service Worker registration failed:', error);
+            console.log('This is normal in development or non-HTTPS environments');
+          });
+        })
+      } else {
+        console.log('Service Worker not supported or not in secure context');
+        console.log('Service Workers require HTTPS or localhost');
+      }
+    </script>
+  </body>
+</html>

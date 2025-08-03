@@ -1,0 +1,24 @@
+{
+  "name": "Pokemon PWA",
+  "short_name": "Pokemon",
+  "description": "A Progressive Web App for browsing Pokemon with infinite scroll",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3367d6",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "games"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "related_applications": [],
+  "prefer_related_applications": false
+}

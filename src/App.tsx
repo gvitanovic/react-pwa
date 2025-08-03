@@ -243,7 +243,7 @@ const PokemonCard = forwardRef<HTMLDivElement, { pokemon: PokemonDetails }>(
         borderRadius: "8px",
       }}
     >
-      <h3>{pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}</h3>
+      <h3>{pokemon.name}</h3>
       <img src={pokemon.sprites.front_default} alt={pokemon.name} />
       <p>
         <strong>ID:</strong> {pokemon.id}

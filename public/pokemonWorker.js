@@ -1,57 +1,66 @@
 // Pokemon PWA Service Worker
 const CACHE_NAME = 'pokemon-pwa-v1';
+const STATIC_CACHE = 'pokemon-static-v1';
+const API_CACHE = 'pokemon-api-v1';
+
+// Essential static resources to cache immediately
 const urlsToCache = [
     '/',
-    '/src/main.tsx',
-    '/src/App.tsx',
-    '/src/App.css',
-    '/src/index.css',
-    'https://pokeapi.co/api/v2/pokemon/?limit=10&offset=0'
+    '/manifest.json',
+    '/vite.svg'
 ];
 
-// Install event - cache resources
+// Install event - cache essential resources only
 self.addEventListener('install', event => {
     console.log('Service Worker installing...');
     event.waitUntil(
-        caches.open(CACHE_NAME)
+        caches.open(STATIC_CACHE)
             .then(cache => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache.filter(url => !url.startsWith('https://pokeapi.co')));
+                console.log('Opened static cache');
+                return cache.addAll(urlsToCache);
             })
             .catch(error => {
-                console.error('Cache failed:', error);
+                console.error('Static cache failed:', error);
             })
     );
+    // Skip waiting to activate immediately
+    self.skipWaiting();
 });
-
-// Activate event - clean up old caches
+// Activate event - clean up old caches and take control
 self.addEventListener('activate', event => {
     console.log('Service Worker activating...');
     event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        Promise.all([
+            // Clean up old caches
+            caches.keys().then(cacheNames => {
+                return Promise.all(
+                    cacheNames.map(cacheName => {
+                        if (cacheName !== STATIC_CACHE && cacheName !== API_CACHE) {
+                            console.log('Deleting old cache:', cacheName);
+                            return caches.delete(cacheName);
+                        }
+                    })
+                );
+            }),
+            // Take control of all clients immediately
+            self.clients.claim()
+        ])
     );
 });
 
-// Fetch event - serve from cache when possible
+// Fetch event - intelligent caching strategy
 self.addEventListener('fetch', event => {
     // Only handle GET requests
     if (event.request.method !== 'GET') {
         return;
     }
 
+    const url = new URL(event.request.url);
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Return cached version or fetch from network
+                // Return cached version if available
                 if (response) {
                     console.log('Serving from cache:', event.request.url);
                     return response;
@@ -60,18 +69,43 @@ self.addEventListener('fetch', event => {
                 console.log('Fetching from network:', event.request.url);
                 return fetch(event.request).then(response => {
                     // Don't cache non-successful responses
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                    if (!response || response.status !== 200) {
                         return response;
                     }
 
                     // Clone the response
                     const responseToCache = response.clone();
 
-                    // Cache Pokemon API responses for faster loading
-                    if (event.request.url.includes('pokeapi.co')) {
-                        caches.open(CACHE_NAME)
+                    // Determine caching strategy based on resource type
+                    let cacheName;
+                    let shouldCache = false;
+
+                    if (url.hostname.includes('pokeapi.co')) {
+                        // Cache Pokemon API responses with expiration
+                        cacheName = API_CACHE;
+                        shouldCache = true;
+                    } else if (url.pathname.startsWith('/assets/') ||
+                        url.pathname.endsWith('.js') ||
+                        url.pathname.endsWith('.css') ||
+                        url.pathname.endsWith('.svg') ||
+                        url.pathname.endsWith('.png') ||
+                        url.pathname.endsWith('.ico')) {
+                        // Cache static assets
+                        cacheName = STATIC_CACHE;
+                        shouldCache = true;
+                    } else if (url.pathname === '/' || url.pathname === '/index.html') {
+                        // Cache the main HTML with shorter expiration
+                        cacheName = STATIC_CACHE;
+                        shouldCache = true;
+                    }
+
+                    if (shouldCache) {
+                        caches.open(cacheName)
                             .then(cache => {
                                 cache.put(event.request, responseToCache);
+                            })
+                            .catch(error => {
+                                console.error('Cache put failed:', error);
                             });
                     }
 
@@ -80,7 +114,17 @@ self.addEventListener('fetch', event => {
             })
             .catch(error => {
                 console.error('Fetch failed:', error);
-                // You could return a fallback page here
+
+                // Provide fallback for navigation requests when offline
+                if (event.request.mode === 'navigate') {
+                    return caches.match('/').then(response => {
+                        return response || new Response('Offline - App not available', {
+                            status: 503,
+                            statusText: 'Service Unavailable'
+                        });
+                    });
+                }
+
                 throw error;
             })
     );

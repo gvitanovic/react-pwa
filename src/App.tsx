@@ -197,7 +197,7 @@ function App() {
       const handleServiceWorkerUpdate = async () => {
         try {
           const registration = await navigator.serviceWorker.ready;
-          
+
           // Check for existing subscription
           const existingSubscription = await registration.pushManager.getSubscription();
           if (existingSubscription) {
@@ -211,18 +211,18 @@ function App() {
             const newWorker = registration.installing;
             if (newWorker) {
               setSwMessages(prev => [...prev, '🔄 Service Worker updating...']);
-              
+
               newWorker.addEventListener('statechange', async () => {
                 if (newWorker.state === 'activated') {
                   setSwMessages(prev => [...prev, '✅ Service Worker updated successfully']);
-                  
+
                   // Automatically resubscribe if we had a subscription
                   if (existingSubscription) {
                     setSwMessages(prev => [...prev, '🔄 Resubscribing to push notifications...']);
                     try {
                       // Unsubscribe from old subscription
                       await existingSubscription.unsubscribe();
-                      
+
                       // Wait a moment for the new service worker to be ready
                       setTimeout(async () => {
                         await subscribeToPushNotifications();

@@ -30,7 +30,7 @@ app.post('/api/subscribe', (req, res) => {
     const subscription = req.body;
 
     // Avoid duplicates
-    const exists = subscriptions.find(sub =>
+    const exists = subscriptions.some(sub =>
         sub.endpoint === subscription.endpoint
     );
 
